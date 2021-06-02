@@ -78,16 +78,22 @@ else
 endif
 endif
 
+L1317= -L$(1317_DIR) -lsignal-dakez
+I25519= -I$(AX_DIR)/src/curve25519 -I$(AX_DIR)/src/curve25519/ed25519 -I$(AX_DIR)/src/curve25519/ed25519/additions -I$(AX_DIR)/src/curve25519/ed25519/nacl_includes
+
 ifeq ($(USE_DYNAMIC_LIBS),)
-	HEADERS=-I$(HDIR)/jabber -I$(LOMEMO_SRC) -I$(AXC_SRC) -I$(AX_DIR)/src
+	HEADERS=-I$(HDIR)/jabber -I$(1317_DIR)/protobuf -I$(1317_DIR)/include $(I25519) -I$(LOMEMO_SRC) -I$(AXC_SRC) -I$(AX_DIR)/src
 else
-	HEADERS=-I$(HDIR)/jabber
+	HEADERS=-I$(HDIR)/jabber -I$(1317_DIR)/protobuf -I$(1317_DIR)/include $(I25519)
 endif
 CFLAGS += -std=c11 -Wall -g -Wstrict-overflow $(PKGCFG_C) $(HEADERS)
 PLUGIN_CPPFLAGS=-DPURPLE_PLUGINS
+
+MY_XMLNS=urn:xmpp:omemo1317
+
 # -D_BSD_SOURCE can be removed once nobody uses glibc <= 2.18 any more
-CPPFLAGS += -D_XOPEN_SOURCE=700 -D_BSD_SOURCE -D_DEFAULT_SOURCE
-LDFLAGS += -ldl -lm $(PKGCFG_L) $(LJABBER) -Wl,-rpath,$(PURPLE_PLUGIN_DIR)
+CPPFLAGS += -D_XOPEN_SOURCE=700 -D_BSD_SOURCE -D_DEFAULT_SOURCE -DOMEMO_XMLNS='"$(MY_XMLNS)"'
+LDFLAGS += -ldl -lm $(PKGCFG_L) $(LJABBER) $(L1317) -Wl,-rpath,$(PURPLE_PLUGIN_DIR)
 LDFLAGS_T=$(LDFLAGS) -lpurple -lcmocka
 
 ### directories
@@ -104,7 +110,7 @@ TDIR=./test
 LOMEMO_DIR=$(LDIR)/libomemo
 LOMEMO_SRC=$(LOMEMO_DIR)/src
 LOMEMO_BUILD=$(LOMEMO_DIR)/build
-LOMEMO_PATH=$(LOMEMO_BUILD)/libomemo-conversations.a
+LOMEMO_PATH=$(LOMEMO_BUILD)/libomemo.a
 
 AXC_DIR=$(LDIR)/axc
 AXC_SRC=$(AXC_DIR)/src
@@ -113,6 +119,9 @@ AXC_PATH=$(AXC_BUILD)/libaxc-nt.a
 
 AX_DIR=$(AXC_DIR)/lib/libsignal-protocol-c
 AX_PATH=$(AX_DIR)/build/src/libsignal-protocol-c.a
+
+1317_DIR=$(LDIR)/1317
+1317_PATH=$(1317_DIR)/libsignal-dakez.a
 
 SOURCES := $(sort $(wildcard $(SDIR)/*.c))
 OBJECTS := $(patsubst $(SDIR)/%.c, $(BDIR)/%.o, $(SOURCES))
@@ -126,7 +135,7 @@ endif
 
 ### make rules
 #
-all: $(BDIR)/lurch.so
+all: $(BDIR)/lurch1317.so
 
 $(BDIR):
 	$(MKDIR_P) build
@@ -142,9 +151,14 @@ $(AXC_PATH):
 	$(MAKE) -C "$(AXC_DIR)" build/libaxc-nt.a
 
 $(LOMEMO_PATH):
-	$(MAKE) -C "$(LOMEMO_DIR)" build/libomemo-conversations.a
+	$(MAKE) -C "$(LOMEMO_DIR)" OVERRIDE_OMEMO_XMLNS=$(MY_XMLNS) build/libomemo.a
 
-$(BDIR)/%.o: $(SDIR)/%.c | $(BDIR)
+$(1317_DIR)/protobuf/DakesProtocol.pb-c.h:
+	$(MAKE) -C "$(1317_DIR)" libsignal-dakez.a
+
+$(1317_PATH): $(1317_DIR)/protobuf/DakesProtocol.pb-c.h
+
+$(BDIR)/%.o: $(SDIR)/%.c | $(BDIR) $(1317_DIR)/protobuf/DakesProtocol.pb-c.h
 	$(CC) -fPIC $(CFLAGS) $(CPPFLAGS) $(PLUGIN_CPPFLAGS) -c $(SDIR)/$*.c -o $@
 
 $(BDIR)/%_w_coverage.o: $(SDIR)/%.c | $(BDIR)
@@ -153,22 +167,22 @@ $(BDIR)/%_w_coverage.o: $(SDIR)/%.c | $(BDIR)
 $(BDIR)/test_%.o: $(TDIR)/test_%.c | $(BDIR)
 	$(CC) $(CFLAGS) -O0 -c $(TDIR)/test_$*.c -o $@
 
-$(BDIR)/lurch.so: $(OBJECTS) $(VENDOR_LIBS)
+$(BDIR)/lurch1317.so: $(OBJECTS) $(VENDOR_LIBS)
 	$(CC) -fPIC -shared $(CFLAGS) $(CPPFLAGS) $(PLUGIN_CPPFLAGS) \
 		$^ \
 		-o $@ $(LDFLAGS)
 $(BDIR)/lurch.a: $(BDIR)/lurch.o $(VENDOR_LIBS)
 	$(AR) rcs $@ $^
 
-install: $(BDIR)/lurch.so
+install: $(BDIR)/lurch1317.so
 	[ -e "$(DESTDIR)/$(PURPLE_PLUGIN_DIR)" ] || \
 		$(INSTALL_DIR) "$(DESTDIR)/$(PURPLE_PLUGIN_DIR)"
-	$(INSTALL_LIB) "$(BDIR)/lurch.so" "$(DESTDIR)/$(PURPLE_PLUGIN_DIR)/lurch.so"
+	$(INSTALL_LIB) "$(BDIR)/lurch1317.so" "$(DESTDIR)/$(PURPLE_PLUGIN_DIR)/lurch1317.so"
 
-install-home: $(BDIR)/lurch.so
+install-home: $(BDIR)/lurch1317.so
 	[ -e "$(PURPLE_HOME_PLUGIN_DIR)" ] || \
 		$(INSTALL_DIR) "$(PURPLE_HOME_PLUGIN_DIR)"
-	$(INSTALL_LIB) "$(BDIR)/lurch.so" "$(PURPLE_HOME_PLUGIN_DIR)/lurch.so"
+	$(INSTALL_LIB) "$(BDIR)/lurch1317.so" "$(PURPLE_HOME_PLUGIN_DIR)/lurch1317.so"
 
 
 LURCH_VERSION ?= 0.0.0
@@ -231,6 +245,7 @@ clean:
 clean-all: clean
 	$(MAKE) -C "$(LOMEMO_DIR)" clean
 	$(MAKE) -C "$(AXC_DIR)" clean-all
+	$(MAKE) -C "$(1317_DIR)" clean
 
 .PHONY: clean clean-all install install-home tarball test coverage
 

@@ -1,6 +1,6 @@
-[submodule "lib/axc"]
-	path = lib/axc
-	url = ../axc
+[submodule "lib/1317"]
+	path = lib/1317
+	url = https://github.com/hardenedvault/vault1317.git
 [submodule "lib/libomemo"]
 	path = lib/libomemo
-	url = ../libomemo
+	url = https://github.com/hardenedvault/libomemo.git

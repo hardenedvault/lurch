@@ -2,7 +2,7 @@
 
 #include "axc.h"
 
-#define LURCH_PREF_ROOT              "/plugins/core/lurch"
+#define LURCH_PREF_ROOT              "/plugins/core/lurch1317"
 #define LURCH_PREF_AXC_LOGGING       LURCH_PREF_ROOT "/axc_logging"
 #define LURCH_PREF_AXC_LOGGING_LEVEL LURCH_PREF_AXC_LOGGING "/level"
 
