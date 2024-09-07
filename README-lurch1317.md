@@ -1,4 +1,4 @@
-# Copyright (C) 2021, HardenedVault Limited (https://hardenedvault.net)
+# Copyright (C) 2018-2024, HardenedVault (https://hardenedvault.net)
 
 # lurch1317
 /lʊʁç/. In German, an Axolotl is a type of Lurch, which simply means 'amphibian'. This plugin brings _Axolotl_, by now renamed to _double ratchet_, to _libpurple_ applications such as [Pidgin](https://www.pidgin.im/) by implementing the [XEP-0384: OMEMO Encryption](https://xmpp.org/extensions/xep-0384.html). For a higher-level overview, see [the official OMEMO homepage](https://conversations.im/omemo/). For more info, please read [lurch's README](https://github.com/hardenedvault/lurch/blob/lurch1317/README.md). lurch1317 is an implementation of vault1317 protocol for Pidgin plugin.
